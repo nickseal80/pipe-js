@@ -1,1 +1,1 @@
-export {pipe} from './lib/pipe';
+export {pipe} from './pipe/pipe';
