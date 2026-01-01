@@ -1,0 +1,1 @@
+export {pipe} from './lib/pipe';
