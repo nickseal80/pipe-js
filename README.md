@@ -1,4 +1,4 @@
-# Pipe.js
+# Pipe.js (Dev draft)
 
 [![Documentation](https://img.shields.io/badge/docs-live-green)](https://nickseal80.github.io/pipe-js/)
 [![GitHub](https://img.shields.io/badge/github-repo-blue)](https://github.com/nickseal80/pipe-js)
