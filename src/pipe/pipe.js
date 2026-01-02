@@ -1,3 +1,17 @@
+/**
+ * Attaches a hook that executes before each function in the pipeline.
+ *
+ * @example
+ * pipeline.before((data, {fn, index}) => {
+ *   console.log(`Before ${fn.name || 'anonymous'} [${index}]`);
+ *   return data;
+ * });
+ *
+ * @param {Function} fns - Hook function to execute.
+ *                         Receives: (currentData, {fn, index, total})
+ *                         Must return: modified data or same data.
+ * @returns {Object} The pipeline executor for chaining.
+ */
 export const pipe = (...fns) => {
     const beforeHooks = [];
     const afterHooks = [];
@@ -58,35 +72,115 @@ export const pipe = (...fns) => {
         return result;
     };
 
-    // Добавляем методы для middleware
+    /**
+     * Attaches a hook that executes before each function in the pipeline.
+     *
+     * @example
+     * pipeline.before((data, {fn, index}) => {
+     *   console.log(`Before ${fn.name || 'anonymous'} [${index}]`);
+     *   return data;
+     * });
+     *
+     * @param {Function} fn - Hook function to execute.
+     *                         Receives: (currentData, {fn, index, total})
+     *                         Must return: modified data or same data.
+     * @returns {Object} The pipeline executor for chaining.
+     */
     executor.before = (fn) => {
         beforeHooks.push(fn);
         return executor;
     };
 
+    /**
+     * Attaches a hook that executes after each function in the pipeline.
+     *
+     * @example
+     * pipeline.after((result, {fn, index}) => {
+     *   console.log(`After ${fn.name}: ${result}`);
+     *   return result;
+     * });
+     *
+     * @param {Function} fn - Hook function to execute.
+     *                         Receives: (result, {fn, index, total})
+     *                         Must return: modified result or same result.
+     * @returns {Object} The pipeline executor for chaining.
+     */
     executor.after = (fn) => {
         afterHooks.push(fn);
         return executor;
     };
 
+    /**
+     * Attaches an error handler for the entire pipeline.
+     * If multiple error handlers are attached, they execute in order until one returns a value.
+     *
+     * @example
+     * pipeline.error((error, {fn, index}) => {
+     *   if (error instanceof NetworkError) {
+     *     console.log('Network error, retrying...');
+     *     return fallbackData; // Recover from error
+     *   }
+     *   // Return undefined to let next handler try
+     * });
+     *
+     * @param {Function} fn - Error handler function.
+     *                         Receives: (error, {fn, index, total, input})
+     *                         Returns: recovered value or undefined.
+     * @returns {Object} The pipeline executor for chaining.
+     */
     executor.error = (fn) => {
         errorHooks.push(fn);
         return executor;
     };
 
+    /**
+     * Attaches a loading state handler for async operations.
+     * Only triggers for functions marked with `__isLoading = true`.
+     *
+     * @example
+     * pipeline.loading((data, {fn, isLoading}) => {
+     *   showSpinner();
+     *   return data;
+     * });
+     *
+     * @param {Function} fn - Loading handler function.
+     *                         Receives: (data, {fn, index, total, isLoading})
+     *                         Returns: modified data or same data.
+     * @returns {Object} The pipeline executor for chaining.
+     */
     executor.loading = (fn) => {
         loadingHooks.push(fn);
         return executor;
     };
 
-    // Добавляем утилиты для работы с асинхронностью
+    // add async utilities
     executor.async = true;
 
     return executor;
 };
 
 /**
- * Создает функцию загрузки
+ * Creates a data loading function that fetches from a URL.
+ * Automatically marks itself as a loading operation (`__isLoading = true`).
+ *
+ * @example
+ * const loadUser = loadFrom('/api/users/123');
+ * const loadDynamic = loadFrom((id) => `/api/users/${id}`);
+ *
+ * // With options
+ * const loadWithAuth = loadFrom('/api/data', {
+ *   headers: { Authorization: 'Bearer token' }
+ * });
+ *
+ * @param {string|Function} url - URL to fetch from. Can be a string or function
+ *                                that receives pipeline input and returns URL.
+ * @param {Object} [options={}] - Fetch API options (method, headers, body, etc.)
+ * @returns {Function} Async loading function with `__isLoading` flag.
+ *
+ * @throws {Error} HTTP errors (non-2xx responses) or network errors.
+ *
+ * @property {boolean} __isLoading - Always true, identifies loading operations.
+ * @property {string} displayName - Debug name for the function.
  */
 export const loadFrom = (url, options = {}) => {
     const loadFn = async (input) => {
@@ -121,7 +215,26 @@ export const loadFrom = (url, options = {}) => {
 };
 
 /**
- * Middleware для отображения состояния загрузки
+ * Creates a data loading function that fetches from a URL.
+ * Automatically marks itself as a loading operation (`__isLoading = true`).
+ *
+ * @example
+ * const loadUser = loadFrom('/api/users/123');
+ * const loadDynamic = loadFrom((id) => `/api/users/${id}`);
+ *
+ * // With options
+ * const loadWithAuth = loadFrom('/api/data', {
+ *   headers: { Authorization: 'Bearer token' }
+ * });
+ *
+ *                                that receives pipeline input and returns URL.
+ * @returns {Function} Async loading function with `__isLoading` flag.
+ *
+ * @throws {Error} HTTP errors (non-2xx responses) or network errors.
+ *
+ * @property {boolean} __isLoading - Always true, identifies loading operations.
+ * @property {string} displayName - Debug name for the function.
+ * @param loadingHandler
  */
 export const whenLoading = (loadingHandler) => {
     return (input, context) => {
@@ -134,7 +247,18 @@ export const whenLoading = (loadingHandler) => {
 };
 
 /**
- * Middleware для обработки загруженных данных
+ * Creates a middleware that executes after loading completes.
+ * Useful for hiding loading indicators or processing loaded data.
+ *
+ * @example
+ * const hideSpinner = whenLoaded((data) => {
+ *   document.getElementById('spinner').style.display = 'none';
+ *   return data;
+ * });
+ *
+ * @param {Function} [successHandler] - Optional function to process loaded data.
+ *                                       If omitted, returns data unchanged.
+ * @returns {Function} Middleware function.
  */
 export const whenLoaded = (successHandler) => {
     return (input, context) => {
@@ -144,7 +268,18 @@ export const whenLoaded = (successHandler) => {
 };
 
 /**
- * Создает асинхронную функцию с задержкой (для тестирования)
+ * Wraps a function to add artificial delay (for testing/debugging).
+ * Marks itself as a loading operation.
+ *
+ * @example
+ * const slowProcess = delayed(processData, 2000); // 2 second delay
+ *
+ * @param {Function} fn - Function to wrap with delay.
+ * @param {number} [delay=1000] - Delay in milliseconds.
+ * @returns {Function} Async function with added delay.
+ *
+ * @property {boolean} __isLoading - Always true.
+ * @property {string} displayName - Debug name based on wrapped function.
  */
 export const delayed = (fn, delay = 1000) => {
     const delayedFn = async (...args) => {
@@ -160,7 +295,20 @@ export const delayed = (fn, delay = 1000) => {
 };
 
 /**
- * Обработчик ошибок загрузки
+ * Creates an error handling middleware for loading operations.
+ *
+ * @example
+ * const handleNetworkError = whenError((error, {fn}) => {
+ *   if (error.name === 'NetworkError') {
+ *     showToast('Network error, please check connection');
+ *     return cachedData;
+ *   }
+ * });
+ *
+ * @param {Function} errorHandler - Error handler function.
+ *                                   Receives: (error, context)
+ *                                   Returns: recovery value or undefined.
+ * @returns {Function} Error middleware function.
  */
 export const whenError = (errorHandler) => {
     return (error, context) => {
@@ -170,7 +318,18 @@ export const whenError = (errorHandler) => {
 };
 
 /**
- * Создает функцию для отображения индикатора загрузки
+ * Creates a middleware that shows a loading indicator element.
+ * Only activates during loading operations.
+ *
+ * @example
+ * const spinner = document.getElementById('spinner');
+ * const showSpinner = showLoader(spinner);
+ *
+ * // Use in pipeline
+ * pipeline.loading(showSpinner);
+ *
+ * @param {HTMLElement} loaderElement - DOM element to show as loader.
+ * @returns {Function} Middleware function that shows the element.
  */
 export const showLoader = (loaderElement) => {
     return (input, context) => {
@@ -183,7 +342,17 @@ export const showLoader = (loaderElement) => {
 };
 
 /**
- * Создает функцию для скрытия индикатора загрузки
+ * Creates a middleware that hides a loading indicator element.
+ *
+ * @example
+ * const spinner = document.getElementById('spinner');
+ * const hideSpinner = hideLoader(spinner);
+ *
+ * // Use in pipeline
+ * pipeline.after(hideSpinner);
+ *
+ * @param {HTMLElement} loaderElement - DOM element to hide.
+ * @returns {Function} Middleware function that hides the element.
  */
 export const hideLoader = (loaderElement) => {
     return (input, context) => {
