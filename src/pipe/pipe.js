@@ -16,9 +16,6 @@ export const pipe = (...fns) => {
                     result = await hook(result, { fn, index, total: fns.length });
                 }
 
-                // Проверяем, является ли функция асинхронной
-                const fnName = fn.name || `step_${index}`;
-
                 // Если функция помечена как loading, вызываем loading hooks
                 if (fn.__isLoading) {
                     for (const hook of loadingHooks) {
@@ -127,27 +124,23 @@ export const loadFrom = (url, options = {}) => {
  * Middleware для отображения состояния загрузки
  */
 export const whenLoading = (loadingHandler) => {
-    const loadingFn = (input, context) => {
+    return (input, context) => {
         if (context.isLoading) {
             console.log('Показываем индикатор загрузки...');
             return loadingHandler(input, context);
         }
         return input;
     };
-
-    return loadingFn;
 };
 
 /**
  * Middleware для обработки загруженных данных
  */
 export const whenLoaded = (successHandler) => {
-    const loadedFn = (input, context) => {
+    return (input, context) => {
         console.log('Данные загружены, скрываем индикатор...');
         return successHandler ? successHandler(input, context) : input;
     };
-
-    return loadedFn;
 };
 
 /**
