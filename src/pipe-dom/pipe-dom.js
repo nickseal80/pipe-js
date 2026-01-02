@@ -1,4 +1,4 @@
-import { createLibrary } from "../createLib.js";
+import { createLibrary, registerLibrary } from "../createLib.js";
 import { createErrorWithCause } from "./polyfills.js";
 import { pipe } from "../pipe/pipe.js";
 
