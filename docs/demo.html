@@ -49,35 +49,36 @@
 </div>
 
 <script>
-    function runCode(id) {
-        const code = document.getElementById(id).value;
-        const outputId = 'output' + id.replace('code', '');
-        const output = document.getElementById(outputId);
+	function runCode(id) {
+		const code = document.getElementById(id).value;
+		const outputId = 'output' + id.replace('code', '');
+		const output = document.getElementById(outputId);
 
-        try {
-            // Сохраняем console.log
-            const oldLog = console.log;
-            let logs = [];
-            console.log = (...args) => {
-                logs.push(args.map(arg =>
-                    typeof arg === 'object' ? JSON.stringify(arg) : arg
-                ).join(' '));
-            };
+		try {
+			// Сохраняем console.log
+			const oldLog = console.log;
+			let logs = [];
+			console.log = (...args) => {
+				logs.push(args.map(arg =>
+					typeof arg === 'object' ? JSON.stringify(arg) : arg
+				).join(' '));
+			};
 
-            // Выполняем код
-            eval(code);
+			// Выполняем код
+			eval(code);
 
-            // Восстанавливаем и показываем результат
-            console.log = oldLog;
-            output.textContent = logs.join('\n');
-            output.style.color = 'green';
-        } catch (error) {
-            output.textContent = 'Ошибка: ' + error.message;
-            output.style.color = 'red';
-        }
-    }
+			// Восстанавливаем и показываем результат
+			console.log = oldLog;
+			output.textContent = logs.join('\n');
+			output.style.color = 'green';
+		} catch (error) {
+			output.textContent = 'Ошибка: ' + error.message;
+			output.style.color = 'red';
+		}
+	}
 </script>
 
-<p>Больше примеров в <a href="index.html">документации</a>.</p>
+<p>Больше примеров в <a href="index.html">документации</a>.
+
 </body>
 </html>

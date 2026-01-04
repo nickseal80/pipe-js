@@ -1,107 +1,76 @@
-import {pipe} from "../../dist/pipe-js.es.js";
-import {pipeDom} from "../../src/pipe-dom/pipe-dom.js";
-import {codeHighlighter} from "../../src/pipe-code-highlighter/code-highlighter.js";
-import { createErrorWithCause } from "../../src/pipe-dom/polyfills.js";
+import { patterns } from "../../src/pipe-code-highlighter/patterns.js";
 
-// const HTML_NS = 'http://www.w3.org/1999/xhtml';
-//
-// const parseCssSelector = (selector) => {
-// 	if (typeof selector !== 'string') {
-// 		throw new TypeError(
-// 			`[parseCssSelector] Expected string, got: ${typeof selector}`
-// 		);
-// 	}
-//
-// 	const trimmed = selector.trim();
-// 	if (trimmed.length === 0) {
-// 		throw new Error('[parseCssSelector] Empty string passed');
-// 	}
-//
-// 	try {
-// 		const tagMatch = trimmed.match(/^[a-zA-Z][\w-]*/);
-// 		const idMatch = trimmed.match(/#([\w-]+)/);
-// 		const classMatches = [...trimmed.matchAll(/\.([\w-]+)/g)];
-// 		const attrMatches = [...trimmed.matchAll(/\[([\w-]+)(?:=(["']?)(.*?)\2)?]/g)];
-//
-// 		const tag = tagMatch?.[0] ?? null;
-// 		const id = idMatch?.[1] ?? null;
-// 		const classes = classMatches.map(m => m[1]);
-// 		const attributes = attrMatches.map(m => ({
-// 			name: m[1],
-// 			value: m[3] ?? null
-// 		}));
-//
-// 		return { tag, id, classes, attributes };
-// 	} catch (error) {
-// 		throw createErrorWithCause(
-// 			`[parseCssSelector] Error parsing selector "${selector}": ${error.message}`,
-// 			error
-// 		);
-// 	}
-// };
-//
-// const createElementFromSelectorData = (data) => {
-// 	if (!data || typeof data !== 'object') {
-// 		throw new TypeError(
-// 			`[createElementFromData] Expected object of type Selector, got: ${typeof data}`
-// 		);
-// 	}
-//
-// 	const { tag, id, classes = [], attributes = [] } = data;
-//
-// 	if (!tag || typeof tag !== 'string') {
-// 		throw new Error(
-// 			`[createElementFromData] Invalid tag: ${tag}`
-// 		);
-// 	}
-//
-// 	try {
-// 		const el = document.createElementNS(HTML_NS, tag);
-//
-// 		if (id) {
-// 			if (typeof id !== 'string') {
-// 				console.warn(`[createElementFromData] ID must be a string, got: ${typeof id}`);
-// 			} else {
-// 				el.id = id;
-// 			}
-// 		}
-//
-// 		if (Array.isArray(classes)) {
-// 			classes.forEach(cls => {
-// 				if (typeof cls === 'string') {
-// 					el.classList.add(cls);
-// 				} else {
-// 					console.warn(`[createElementFromData] Skipped invalid class: ${cls}`);
-// 				}
-// 			});
-// 		}
-//
-// 		if (Array.isArray(attributes)) {
-// 			attributes.forEach(({ name, value }) => {
-// 				if (name && typeof name === 'string') {
-// 					try {
-// 						el.setAttribute(name, value || '');
-// 					} catch (attrError) {
-// 						console.warn(`[createElementFromData] Error setting attribute ${name}:`, attrError);
-// 					}
-// 				}
-// 			});
-// 		}
-//
-// 		return el;
-// 	} catch (error) {
-// 		throw createErrorWithCause(
-// 			`[createElementFromData] Error creating element <${tag}>: ${error.message}`,
-// 			error
-// 		);
-// 	}
-// };
-//
-// const createElementFromSelector = pipe(parseCssSelector, createElementFromSelectorData);
-
-const el = await pipe(
-	pipeDom.createElementFromSelector
-)('div.hi');
-
-console.log(el);
+export const highlighter = () => {
+	const highlight = (code) => {
+		// Токенизация: разбиваем код на фрагменты
+		const tokens = [];
+		let pos = 0;
+		
+		while (pos < code.length) {
+			let matched = false;
+			
+			// Пробуем каждый паттерн
+			for (const { pattern, type } of patterns) {
+				pattern.lastIndex = pos;
+				const match = pattern.exec(code);
+				
+				if (match && match.index === pos) {
+					tokens.push({
+						type: type,
+						text: match[0]
+					});
+					pos += match[0].length;
+					matched = true;
+					break;
+				}
+			}
+			
+			// Если ничего не нашли - обычный текст
+			if (!matched) {
+				// Находим следующий токен
+				let nextPos = pos + 1;
+				let foundNext = false;
+				
+				while (nextPos < code.length && !foundNext) {
+					for (const { pattern } of patterns) {
+						pattern.lastIndex = nextPos;
+						const match = pattern.exec(code);
+						if (match && match.index === nextPos) {
+							foundNext = true;
+							break;
+						}
+					}
+					if (!foundNext) nextPos++;
+				}
+				
+				const text = code.substring(pos, nextPos);
+				if (text) {
+					tokens.push({
+						type: 'text',
+						text: text
+					});
+				}
+				pos = nextPos;
+			}
+		}
+		
+		// Преобразуем токены в HTML
+		return tokens.map(token => {
+			if (token.type === 'text') {
+				// Экранируем только обычный текст
+				return token.text
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/"/g, '&quot;')
+					.replace(/'/g, '&#039;');
+			}
+			return `<span class="js-${token.type}">${token.text}</span>`;
+		}).join('');
+	};
+	
+	document.querySelectorAll('code').forEach(codeEl => {
+		codeEl.innerHTML = highlight(codeEl.textContent);
+	});
+};
 
