@@ -4,12 +4,9 @@
 declare namespace DOM {
     interface Selector {
         tag: string | null;
-        id: string | null;
-        classes: string[];
-        attributes: Array<{
-            name: string;
-            value: string | null;
-        }>;
+        id?: string | null;
+        classes?: string[];
+        attributes?: Array<Object>;
     }
 
     type StringType = 'selector' | 'html';

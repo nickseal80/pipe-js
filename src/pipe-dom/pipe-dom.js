@@ -1,4 +1,4 @@
-import { createLibrary, registerLibrary } from "../createLib.js";
+import { createLibrary } from "../createLib.js";
 import { createErrorWithCause } from "./polyfills.js";
 import { pipe } from "../pipe/pipe.js";
 
@@ -118,7 +118,7 @@ export const pipeDom = createLibrary('DOM', {
      * parseCssSelector(123); // TypeError
      * parseCssSelector('   '); // Error
      */
-    parseCssSelector: (selector) => {
+    parseCssSelector(selector) {
         if (typeof selector !== 'string') {
             throw new TypeError(
                 `[parseCssSelector] Expected string, got: ${typeof selector}`
@@ -201,7 +201,7 @@ export const pipeDom = createLibrary('DOM', {
      * createElementFromSelectorData({}); // Error - tag missing
      * createElementFromSelectorData({ tag: 123 }); // Error - invalid tag
      */
-    createElementFromSelectorData: (data) => {
+    createElementFromSelectorData(data) {
         if (!data || typeof data !== 'object') {
             throw new TypeError(
                 `[createElementFromData] Expected object of type Selector, got: ${typeof data}`
@@ -282,7 +282,7 @@ export const pipeDom = createLibrary('DOM', {
      *
      * @example
      * // Creating element with ID
-     * createElementFromSelector('div#header');
+     * createElementFromSelector('divaweader');
      * // returns: <div id="header"></div>
      *
      * @example
@@ -299,7 +299,24 @@ export const pipeDom = createLibrary('DOM', {
      * @see createElementFromSelectorData
      * @see pipe
      */
-    createElementFromSelector: pipe(this.parseCssSelector, this.createElementFromSelectorData),
+    createElementFromSelector(selector) {
+        if (typeof selector !== 'string') {
+            throw new TypeError(
+                `[createElementFromSelector] Expected string, got: ${typeof selector}`
+            );
+        }
+    
+        try {
+            // Создаем элемент и возвращаем его напрямую
+            const parsedData = this.parseCssSelector(selector);
+            return this.createElementFromSelectorData(parsedData);
+        } catch (error) {
+            throw createErrorWithCause(
+                `[createElementFromSelector] Error creating element from selector "${selector}": ${error.message}`,
+                error
+            );
+        }
+    },
 
     /**
      * Higher-order function that sets text content for a DOM element

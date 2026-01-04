@@ -1,56 +1,40 @@
 export const createLibrary = (namespace, methods) => {
-    const library = {};
-
-    // Создаем обернутые методы
-    for (const [name, fn] of Object.entries(methods)) {
-        library[name] = (...args) => {
-            return (input, ...pipeArgs) => {
-                // Сохраняем контекст
-                const context = {
-                    namespace,
-                    method: name,
-                    library
-                };
-
-                // Вызываем с контекстом
-                return fn.call(context, input, ...args, ...pipeArgs);
-            };
+    const library = { _namespace: namespace };
+    
+    // Создаем кешированные версии методов для контекста
+    const createMethodForContext = (methodName, methodFn) => {
+        return (...args) => {
+            const context = createContext();
+            return methodFn.call(context, ...args);
         };
-
-        // Статический вызов
-        library[name].static = (...args) => fn(null, ...args);
-    }
-
-    // Метод для использования библиотеки
-    library.use = () => (input) => {
-        // Можно добавить логику установки неймспейса
-        return input;
     };
-
-    library.namespace = namespace;
-
+    
+    // Функция для создания контекста с методами
+    const createContext = () => {
+        const context = { _namespace: namespace };
+        
+        // Добавляем все методы в контекст
+        Object.entries(methods).forEach(([methodName, methodFn]) => {
+            context[methodName] = createMethodForContext(methodName, methodFn);
+        });
+        
+        return context;
+    };
+    
+    // Создаем публичные методы
+    Object.entries(methods).forEach(([name, fn]) => {
+        // Публичный метод для прямого вызова
+        const publicMethod = (...args) => {
+            const context = createContext();
+            return fn.call(context, ...args);
+        };
+        
+        // Добавляем вспомогательные методы
+        publicMethod.direct = publicMethod;
+        publicMethod.static = (...args) => fn(null, ...args);
+        
+        library[name] = publicMethod;
+    });
+    
     return library;
-};
-
-// Глобальный реестр библиотек
-const libraries = new Map();
-
-/**
- * Регистрация библиотеки
- */
-export const registerLibrary = (namespace, methods) => {
-    if (libraries.has(namespace)) {
-        throw new Error(`Library "${namespace}" already exists`);
-    }
-
-    const lib = createLibrary(namespace, methods);
-    libraries.set(namespace, lib);
-    return lib;
-};
-
-/**
- * Получение библиотеки
- */
-export const getLibrary = (namespace) => {
-    return libraries.get(namespace);
 };

@@ -4,122 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipe.js - Универсальный пайплайн для JavaScript</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 3rem 2rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .badges {
-            margin: 1rem 0;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 5px 10px;
-            margin: 0 5px 5px 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        section {
-            margin: 2rem 0;
-            padding: 1.5rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        h2 {
-            color: #667eea;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 0.5rem;
-        }
-
-        pre {
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 1rem;
-            border-radius: 5px;
-            overflow-x: auto;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-        }
-
-        code {
-            font-family: 'Courier New', monospace;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 10px 5px;
-            font-weight: bold;
-            transition: transform 0.2s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            background: #5a67d8;
-        }
-
-        .btn-gh {
-            background: #24292e;
-        }
-
-        .btn-gh:hover {
-            background: #000;
-        }
-
-        .example {
-            background: white;
-            border-left: 4px solid #667eea;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #ddd;
-            color: #666;
-        }
-    </style>
+    <link rel="stylesheet" href="styles/index.css"/>
 </head>
 <body>
 <header>
@@ -271,9 +156,9 @@ processInvoice('2024-01-06');
 </footer>
 
 <script>
-    // Простой пример прямо на странице
-    function runDemo() {
-        const demoCode = `
+	// Простой пример прямо на странице
+	function runDemo() {
+		const demoCode = `
 // Простейший пример Pipe.js
 const simplePipe = pipe(
     (x) => x * 2,
@@ -282,24 +167,25 @@ const simplePipe = pipe(
 );
 console.log(simplePipe(5)); // "Результат: 20"
             `;
-        console.log('Запускаем демо Pipe.js...');
-        eval(demoCode.replace('pipe(', 'window.pipeDemo = (window.pipe || ((...fns) => (x) => fns.reduce((v, f) => f(v), x))('));
-        console.log('pipeDemo(5):', window.pipeDemo(5));
-    }
+		console.log('Запускаем демо Pipe.js...');
+		eval(demoCode.replace('pipe(', 'window.pipeDemo = (window.pipe || ((...fns) => (x) => fns.reduce((v, f) => f(v), x))('));
+		console.log('pipeDemo(5):', window.pipeDemo(5));
+	}
 
-    // Добавляем кнопку запуска демо, если на странице
-    if (!window.location.host.includes('github.io')) {
-        document.addEventListener('DOMContentLoaded', function () {
-            const demoSection = document.querySelector('#demo');
-            if (demoSection) {
-                const btn = document.createElement('button');
-                btn.textContent = '▶ Запустить демо в консоли';
-                btn.style.cssText = 'background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px;';
-                btn.onclick = runDemo;
-                demoSection.querySelector('pre').after(btn);
-            }
-        });
-    }
+	// Добавляем кнопку запуска демо, если на странице
+	if (!window.location.host.includes('github.io')) {
+		document.addEventListener('DOMContentLoaded', function () {
+			const demoSection = document.querySelector('#demo');
+			if (demoSection) {
+				const btn = document.createElement('button');
+				btn.textContent = '▶ Запустить демо в консоли';
+				btn.style.cssText = 'background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px;';
+				btn.onclick = runDemo;
+				demoSection.querySelector('pre').after(btn);
+			}
+		});
+	}
 </script>
+<script src="scripts/index.js" type="module"></script>
 </body>
 </html>
