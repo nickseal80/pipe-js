@@ -1,4 +1,9 @@
 /**
+ * Pipeline utility for composing functions with hooks
+ * @module pipeline
+ */
+
+/**
  * Attaches a hook that executes before each function in the pipeline.
  *
  * @example
@@ -7,9 +12,7 @@
  *   return data;
  * });
  *
- * @param {Function} fns - Hook function to execute.
- *                         Receives: (currentData, {fn, index, total})
- *                         Must return: modified data or same data.
+ * @param {...Function} fns - Functions to execute in pipeline
  * @returns {Object} The pipeline executor for chaining.
  */
 export const pipe = (...fns) => {
@@ -17,61 +20,64 @@ export const pipe = (...fns) => {
     const afterHooks = [];
     const errorHooks = [];
     const loadingHooks = [];
-
+    
     const executor = async (input, ...args) => {
         let result = input;
-
+        
         for (let index = 0; index < fns.length; index++) {
             const fn = fns[index];
-
+            const baseContext = { fn, index, total: fns.length };
+            
             try {
                 // before hooks
                 for (const hook of beforeHooks) {
-                    result = await hook(result, { fn, index, total: fns.length });
+                    result = await hook(result, baseContext);
                 }
-
-                // Если функция помечена как loading, вызываем loading hooks
+                
+                // loading hooks
                 if (fn.__isLoading) {
+                    const loadingContext = { ...baseContext, isLoading: true };
                     for (const hook of loadingHooks) {
-                        result = await hook(result, {
-                            fn,
-                            index,
-                            total: fns.length,
-                            isLoading: true
-                        });
+                        result = await hook(result, loadingContext);
                     }
                 }
-
+                
                 // main function
                 const fnResult = fn(result, ...args);
-
-                // Обрабатываем как Promise, если это асинхронная функция
                 result = fnResult instanceof Promise ? await fnResult : fnResult;
-
+                
                 // after hooks
                 for (const hook of afterHooks) {
-                    result = await hook(result, { fn, index, total: fns.length });
+                    result = await hook(result, baseContext);
                 }
-
+                
             } catch (error) {
                 // error hooks
                 if (errorHooks.length > 0) {
+                    const errorContext = { ...baseContext, input: result };
+                    let errorHandled = false;
+                    
                     for (const hook of errorHooks) {
-                        const handled = await hook(error, { fn, index, total: fns.length, input: result });
+                        const handled = await hook(error, errorContext);
                         if (handled !== undefined) {
                             result = handled;
+                            errorHandled = true;
                             break;
                         }
+                    }
+                    
+                    if (!errorHandled) {
+                        throw error;
                     }
                 } else {
                     throw error;
                 }
             }
         }
-
+        
         return result;
     };
-
+    
     /**
      * Attaches a hook that executes before each function in the pipeline.
      *
@@ -87,10 +93,13 @@ export const pipe = (...fns) => {
      * @returns {Object} The pipeline executor for chaining.
      */
     executor.before = (fn) => {
+        if (typeof fn !== 'function') {
+            throw new TypeError('before hook must be a function');
+        }
         beforeHooks.push(fn);
         return executor;
     };
-
+    
     /**
      * Attaches a hook that executes after each function in the pipeline.
      *
@@ -106,10 +115,13 @@ export const pipe = (...fns) => {
      * @returns {Object} The pipeline executor for chaining.
      */
     executor.after = (fn) => {
+        if (typeof fn !== 'function') {
+            throw new TypeError('after hook must be a function');
+        }
         afterHooks.push(fn);
         return executor;
     };
-
+    
     /**
      * Attaches an error handler for the entire pipeline.
      * If multiple error handlers are attached, they execute in order until one returns a value.
@@ -129,10 +141,13 @@ export const pipe = (...fns) => {
      * @returns {Object} The pipeline executor for chaining.
      */
     executor.error = (fn) => {
+        if (typeof fn !== 'function') {
+            throw new TypeError('error handler must be a function');
+        }
         errorHooks.push(fn);
         return executor;
     };
-
+    
     /**
      * Attaches a loading state handler for async operations.
      * Only triggers for functions marked with `__isLoading = true`.
@@ -149,13 +164,15 @@ export const pipe = (...fns) => {
      * @returns {Object} The pipeline executor for chaining.
      */
     executor.loading = (fn) => {
+        if (typeof fn !== 'function') {
+            throw new TypeError('loading hook must be a function');
+        }
         loadingHooks.push(fn);
         return executor;
     };
-
-    // add async utilities
+    
     executor.async = true;
-
+    
     return executor;
 };
 
@@ -185,59 +202,53 @@ export const pipe = (...fns) => {
 export const loadFrom = (url, options = {}) => {
     const loadFn = async (input) => {
         console.log(`Загрузка данных из: ${url}`);
-
-        // Если есть входные параметры, можно их использовать
+        
         const requestUrl = typeof url === 'function' ? url(input) : url;
-
+        
         try {
             const response = await fetch(requestUrl, options);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-
-            // Определяем тип данных
+            
             const contentType = response.headers.get('content-type');
             if (contentType?.includes('application/json')) {
                 return await response.json();
-            } else {
-                return await response.text();
             }
+            return await response.text();
+            
         } catch (error) {
             console.error('Ошибка загрузки:', error);
             throw error;
         }
     };
-
+    
     loadFn.__isLoading = true;
-    loadFn.displayName = `loadFrom(${url})`;
-
+    loadFn.displayName = `loadFrom(${typeof url === 'function' ? 'dynamic' : url})`;
+    
     return loadFn;
 };
 
 /**
- * Creates a data loading function that fetches from a URL.
- * Automatically marks itself as a loading operation (`__isLoading = true`).
+ * Creates a middleware that activates during loading operations.
  *
  * @example
- * const loadUser = loadFrom('/api/users/123');
- * const loadDynamic = loadFrom((id) => `/api/users/${id}`);
- *
- * // With options
- * const loadWithAuth = loadFrom('/api/data', {
- *   headers: { Authorization: 'Bearer token' }
+ * const showLoading = whenLoading((data, {isLoading}) => {
+ *   console.log('Показываем индикатор загрузки...');
+ *   return data;
  * });
  *
- *                                that receives pipeline input and returns URL.
- * @returns {Function} Async loading function with `__isLoading` flag.
- *
- * @throws {Error} HTTP errors (non-2xx responses) or network errors.
- *
- * @property {boolean} __isLoading - Always true, identifies loading operations.
- * @property {string} displayName - Debug name for the function.
- * @param loadingHandler
+ * @param {Function} loadingHandler - Function to execute during loading.
+ *                                    Receives: (data, context)
+ *                                    Returns: modified data or same data.
+ * @returns {Function} Middleware function.
  */
 export const whenLoading = (loadingHandler) => {
-    return (input, context) => {
+    if (typeof loadingHandler !== 'function') {
+        throw new TypeError('loadingHandler must be a function');
+    }
+    
+    return (input, context = {}) => {
         if (context.isLoading) {
             console.log('Показываем индикатор загрузки...');
             return loadingHandler(input, context);
@@ -261,9 +272,13 @@ export const whenLoading = (loadingHandler) => {
  * @returns {Function} Middleware function.
  */
 export const whenLoaded = (successHandler) => {
-    return (input, context) => {
+    const handler = typeof successHandler === 'function'
+        ? successHandler
+        : (input) => input;
+    
+    return (input, context = {}) => {
         console.log('Данные загружены, скрываем индикатор...');
-        return successHandler ? successHandler(input, context) : input;
+        return handler(input, context);
     };
 };
 
@@ -282,15 +297,19 @@ export const whenLoaded = (successHandler) => {
  * @property {string} displayName - Debug name based on wrapped function.
  */
 export const delayed = (fn, delay = 1000) => {
-    const delayedFn = async (...args) => {
+    if (typeof fn !== 'function') {
+        throw new TypeError('fn must be a function');
+    }
+    
+    const delayedFn = async (input, ...args) => {
         console.log(`Задержка ${delay}мс...`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        return fn(...args);
+        return fn(input, ...args);
     };
-
+    
     delayedFn.__isLoading = true;
     delayedFn.displayName = `delayed(${fn.name || 'anonymous'})`;
-
+    
     return delayedFn;
 };
 
@@ -311,7 +330,11 @@ export const delayed = (fn, delay = 1000) => {
  * @returns {Function} Error middleware function.
  */
 export const whenError = (errorHandler) => {
-    return (error, context) => {
+    if (typeof errorHandler !== 'function') {
+        throw new TypeError('errorHandler must be a function');
+    }
+    
+    return (error, context = {}) => {
         console.log('Обработка ошибки загрузки...');
         return errorHandler(error, context);
     };
@@ -332,7 +355,11 @@ export const whenError = (errorHandler) => {
  * @returns {Function} Middleware function that shows the element.
  */
 export const showLoader = (loaderElement) => {
-    return (input, context) => {
+    if (loaderElement && typeof loaderElement.style === 'undefined') {
+        console.warn('showLoader: element has no style property');
+    }
+    
+    return (input, context = {}) => {
         if (context.isLoading && loaderElement) {
             loaderElement.style.display = 'block';
             console.log('Индикатор загрузки показан');
@@ -355,7 +382,11 @@ export const showLoader = (loaderElement) => {
  * @returns {Function} Middleware function that hides the element.
  */
 export const hideLoader = (loaderElement) => {
-    return (input, context) => {
+    if (loaderElement && typeof loaderElement.style === 'undefined') {
+        console.warn('hideLoader: element has no style property');
+    }
+    
+    return (input, context = {}) => {
         if (loaderElement) {
             loaderElement.style.display = 'none';
             console.log('Индикатор загрузки скрыт');
