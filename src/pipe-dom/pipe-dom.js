@@ -357,6 +357,167 @@ export const pipeDom = createLibrary('DOM', {
 
         return element;
     },
+    
+    /**
+     * Sets multiple attributes on an element.
+     * Converts camelCase attribute names to kebab-case.
+     * Skips invalid attributes and provides warnings.
+     *
+     * @example
+     * // Basic usage
+     * pipe(createElement('div'), withAttributes({ id: 'myDiv', class: 'container' }));
+     *
+     * @example
+     * // CamelCase to kebab-case conversion
+     * pipe(createElement('input'), withAttributes({
+     *   dataUserId: '123',      // becomes data-user-id
+     *   ariaLabel: 'Search',    // becomes aria-label
+     *   customAttr: 'value'     // becomes custom-attr
+     * }));
+     *
+     * @example
+     * // Multiple calls
+     * pipe(createElement('div'),
+     *   withAttributes({ class: 'container' }),
+     *   withAttributes({ id: 'main', style: 'color: red;' })
+     * );
+     *
+     * @param {Object} attributes - Object containing attribute key-value pairs
+     * @returns {Function} Function that accepts an element and returns it with attributes set
+     *
+     * @throws {TypeError} When element is not a valid HTMLElement
+     *
+     * @property {string} displayName - Debug name for the function
+     */
+    withAttributes: (attributes) => {
+        if (attributes === null || attributes === undefined) {
+            throw new TypeError('withAttributes: attributes object cannot be null or undefined');
+        }
+        
+        if (typeof attributes !== 'object' || Array.isArray(attributes)) {
+            throw new TypeError('withAttributes: attributes must be a plain object');
+        }
+        
+        /**
+         * Converts camelCase string to kebab-case
+         * @param {string} str - camelCase string
+         * @returns {string} kebab-case string
+         */
+        const camelToKebab = (str) => {
+            if (typeof str !== 'string') return str;
+            return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+        };
+        
+        /**
+         * Validates if a value can be used as an attribute value
+         * @param {*} value - Value to validate
+         * @returns {boolean} True if value is valid
+         */
+        const isValidAttributeValue = (value) => {
+            return value !== null && value !== undefined;
+        };
+        
+        const attributeSetter = (element) => {
+            if (!element || !(element instanceof HTMLElement)) {
+                throw new TypeError(
+                    `withAttributes: Expected HTMLElement, got ${element === null ? 'null' : typeof element}`
+                );
+            }
+            
+            const attributeKeys = Object.keys(attributes);
+            let appliedCount = 0;
+            
+            attributeKeys.forEach((key) => {
+                const value = attributes[key];
+                
+                // Skip invalid values
+                if (!isValidAttributeValue(value)) {
+                    console.warn(
+                        `withAttributes: Skipping attribute "${key}" with invalid value:`,
+                        value
+                    );
+                    return;
+                }
+                
+                // Convert camelCase to kebab-case for attribute names
+                const attributeName = camelToKebab(key);
+                
+                // Special handling for style attribute (can be object or string)
+                if (attributeName === 'style' && typeof value === 'object' && !Array.isArray(value)) {
+                    try {
+                        Object.keys(value).forEach((styleKey) => {
+                            const kebabStyleKey = camelToKebab(styleKey);
+                            element.style[kebabStyleKey] = value[styleKey];
+                        });
+                        appliedCount++;
+                    } catch (error) {
+                        console.warn(`withAttributes: Error setting style attribute:`, error);
+                    }
+                    return;
+                }
+                
+                // Special handling for class attribute (can be string or array)
+                if (attributeName === 'class') {
+                    try {
+                        if (Array.isArray(value)) {
+                            element.className = value.filter(cls => cls && typeof cls === 'string').join(' ');
+                        } else if (typeof value === 'string') {
+                            element.className = value;
+                        }
+                        appliedCount++;
+                    } catch (error) {
+                        console.warn(`withAttributes: Error setting class attribute:`, error);
+                    }
+                    return;
+                }
+                
+                // Handle dataset attributes (data-*)
+                if (attributeName.startsWith('data-')) {
+                    const dataKey = attributeName.replace('data-', '');
+                    try {
+                        element.dataset[dataKey] = String(value);
+                        appliedCount++;
+                    } catch (error) {
+                        console.warn(`withAttributes: Error setting data attribute ${dataKey}:`, error);
+                    }
+                    return;
+                }
+                
+                // Handle aria attributes
+                if (attributeName.startsWith('aria-')) {
+                    try {
+                        element.setAttribute(attributeName, String(value));
+                        appliedCount++;
+                    } catch (error) {
+                        console.warn(`withAttributes: Error setting aria attribute ${attributeName}:`, error);
+                    }
+                    return;
+                }
+                
+                // Standard attributes
+                try {
+                    element.setAttribute(attributeName, String(value));
+                    appliedCount++;
+                } catch (error) {
+                    console.warn(`withAttributes: Error setting attribute "${attributeName}":`, error);
+                }
+            });
+            
+            // Log summary in development
+            if (process.env.NODE_ENV !== 'production' && appliedCount !== attributeKeys.length) {
+                console.debug(
+                    `withAttributes: Applied ${appliedCount} of ${attributeKeys.length} attributes`
+                );
+            }
+            
+            return element;
+        };
+        
+        // Add display name for debugging
+        attributeSetter.displayName = `withAttributes(${Object.keys(attributes).join(', ')})`;
+        
+        return attributeSetter;
+    },
 
     /**
      * Higher-order function that adds child elements to a parent element
@@ -555,6 +716,34 @@ export const pipeDom = createLibrary('DOM', {
 
         return parent;
     },
+    
+    // Модифицируем withComponents для поддержки асинхронных компонентов
+    withComponentsAsync: (...children) => async (parent, ...args) => {
+        if (!parent || !(parent instanceof HTMLElement)) {
+            throw new TypeError(`Expected HTMLElement for parent`);
+        }
+        
+        for (const childDef of children) {
+            try {
+                let child;
+                
+                if (Array.isArray(childDef)) {
+                    const [fn, ...childArgs] = childDef;
+                    child = await fn(...childArgs, ...args);
+                } else {
+                    child = await (typeof childDef === 'function' ? childDef(...args) : childDef);
+                }
+                
+                if (child && child instanceof HTMLElement) {
+                    parent.appendChild(child);
+                }
+            } catch (error) {
+                console.warn('Error creating child:', error);
+            }
+        }
+        
+        return parent;
+    },
 
     /**
      * Higher-order function that adds event handlers to a DOM element
@@ -608,6 +797,24 @@ export const pipeDom = createLibrary('DOM', {
             element.addEventListener(event, handler);
         });
 
+        return element;
+    },
+    
+    render: (target) => (element) => {
+        // if (!(target instanceof s)) {
+        //     throw new TypeError(
+        //         `[render] Invalid target passed. Expected Node, got: ${typeof target}`
+        //     );
+        // }
+        
+        const targetEl = document.querySelector(target);
+        
+        if (!targetEl) {
+            throw new Error("[render] Target element was not found");
+        }
+        
+        targetEl.appendChild(element);
+        
         return element;
     },
 
