@@ -1,4 +1,4 @@
-import { pipe, pipeDom } from "../../../dist/pipe-js.es.js";
+import { pipe, pipeDom } from "../../ext/pipe-js.es.js";
 
 export const Pages = (store, pages) => {
 	return pipe(
