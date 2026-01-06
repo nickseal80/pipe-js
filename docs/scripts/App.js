@@ -7,7 +7,7 @@ const render = () => {
 		url: '/',
 		lang: 'ru',
 	});
-	
+
 	return pipe(
 		pipeDom.createElementFromSelector,
 		pipeDom.withComponents(
