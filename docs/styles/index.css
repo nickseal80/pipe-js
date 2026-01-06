@@ -120,3 +120,25 @@ footer {
     border-top: 1px solid #ddd;
     color: #666;
 }
+
+/* highlighter */
+.js-keyword {
+    color: #6392B3;
+    font-weight: bold;
+}
+
+.js-comment {
+    color: #919191;
+}
+
+.js-string {
+    color: #D58F57;
+}
+
+.js-number {
+    color: #92C4A2;
+}
+
+.js-function {
+    color: #FBC56C;
+}
