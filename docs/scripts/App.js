@@ -1,4 +1,4 @@
-import { pipe, pipeDom } from "https://nickseal80.github.io/pipe-js/pipe-js.es.js";
+import { pipe, pipeDom } from "https://nickseal80.github.io/pipe-js/public/pipe-js.es.js";
 import { Header } from "./components/layouts/Header.js";
 import { createState } from "../../ext/state/state.es.js";
 
