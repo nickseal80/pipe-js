@@ -1,4 +1,4 @@
-import { pipe, pipeDom } from "../../dist/pipe-js.es.js";
+import { pipe, pipeDom } from "pipe-js.es.js";
 import { Header } from "./components/layouts/Header.js";
 import { createState } from "../../ext/state/state.es.js";
 
@@ -10,10 +10,10 @@ const render = () => {
 
 	return pipe(
 		pipeDom.createElementFromSelector,
-		pipeDom.withComponents(
-			Header
-		),
-		pipeDom.render('body')
+		// pipeDom.withComponents(
+		// 	Header
+		// ),
+		// pipeDom.render('body')
 	)('div.app', store);
 };
 
