@@ -412,35 +412,59 @@ export const pipeDom = createLibrary('DOM', {
      * )(document.body);
      */
     withElements: (...children) => (parent) => {
-        // Check parent element
-        if (!parent || (typeof parent !== 'function' && !(parent instanceof Node))) {
+        /**
+         * Добавляет дочерние элементы к родительскому узлу.
+         * Поддерживает HTMLElement, DocumentFragment, HTMLTemplateElement и другие Node.
+         *
+         * @param {Node|Function} parent - Родительский узел или функция, возвращающая узел
+         * @param {...(Node|Function)} children - Дочерние элементы
+         * @returns {Node} Родительский узел
+         */
+    
+        if (!parent) {
             throw new TypeError(
-                `[withElements] Expected Node or function returning HTMLElement, got: ${typeof parent}`
+                '[withElements] Parent is required'
             );
         }
-
+    
+        // Получаем родительский узел (если переданна функция)
         const parentNode = (typeof parent === 'function') ? parent() : parent;
-
-        // Check function result
-        if (!(parentNode instanceof HTMLElement)) {
+    
+        // Проверяем, что это Node (включая DocumentFragment, HTMLTemplateElement и т.д.)
+        if (!(parentNode instanceof Node)) {
             throw new TypeError(
-                `[withElements] Function must return HTMLElement, got: ${typeof parentNode}`
+                `[withElements] Expected Node or function returning Node, got: ${typeof parentNode} (${parentNode?.constructor?.name})`
             );
         }
-
+    
+        // Определяем целевой контейнер для добавления детей
+        let targetContainer = parentNode;
+    
+        // Особый случай: если это template, добавляем в его content
+        if (parentNode instanceof HTMLTemplateElement) {
+            targetContainer = parentNode.content;
+        }
+        // Если это DocumentFragment, работаем с ним напрямую
+        else if (parentNode instanceof DocumentFragment) {
+            targetContainer = parentNode;
+        }
+    
         let hasValidChildren = false;
-
+    
         children.forEach((child, index) => {
             try {
+                // Получаем дочерний узел
                 const childNode = (typeof child === 'function') ? child() : child;
-
-                if (childNode && childNode instanceof HTMLElement) {
-                    parentNode.appendChild(childNode);
+            
+                if (childNode && childNode instanceof Node) {
+                    targetContainer.appendChild(childNode);
                     hasValidChildren = true;
-                } else if (childNode !== null && childNode !== undefined) {
-                    console.warn(
-                        `[withElements] Skipped invalid child element at index ${index}. Expected Node or function returning HTMLElement, got: ${typeof childNode}`
-                    );
+                }
+                // Поддержка текстовых узлов и примитивов
+                else if (childNode !== null && childNode !== undefined) {
+                    const textNode = document.createTextNode(String(childNode));
+                    targetContainer.appendChild(textNode);
+                    hasValidChildren = true;
                 }
             } catch (error) {
                 console.warn(
@@ -449,14 +473,14 @@ export const pipeDom = createLibrary('DOM', {
                 );
             }
         });
-
+    
         if (!hasValidChildren) {
-            throw new TypeError(
-                '[withElements] None of the child elements is a valid HTMLElement'
+            console.warn(
+                '[withElements] None of the child elements is a valid Node or convertible to text'
             );
         }
-
-        return parent;
+    
+        return parentNode;
     },
 
     /**

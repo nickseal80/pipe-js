@@ -1,22 +1,22 @@
-const S = (...r) => {
-  const e = [], t = [], c = [], n = (i, ...o) => {
-    let s = i;
+const b = (...r) => {
+  const e = [], t = [], c = [], o = (i, ...s) => {
+    let n = i;
     for (let a = 0; a < r.length; a++) {
       const h = r[a], f = { fn: h, index: a, total: r.length };
       try {
         for (const l of e)
-          s = l(s, f);
-        s = h(s, ...o);
+          n = l(n, f);
+        n = h(n, ...s);
         for (const l of t)
-          s = l(s, f);
+          n = l(n, f);
       } catch (l) {
         if (c.length > 0) {
-          const y = { ...f, input: s };
+          const y = { ...f, input: n };
           let E = !1;
           for (const u of c) {
             const w = u(l, y);
             if (w !== void 0) {
-              s = w, E = !0;
+              n = w, E = !0;
               break;
             }
           }
@@ -26,37 +26,37 @@ const S = (...r) => {
           throw l;
       }
     }
-    return s;
+    return n;
   };
-  return n.before = (i) => {
+  return o.before = (i) => {
     if (typeof i != "function")
       throw new TypeError("before hook must be a function");
-    return e.push(i), n;
-  }, n.after = (i) => {
+    return e.push(i), o;
+  }, o.after = (i) => {
     if (typeof i != "function")
       throw new TypeError("after hook must be a function");
-    return t.push(i), n;
-  }, n.error = (i) => {
+    return t.push(i), o;
+  }, o.error = (i) => {
     if (typeof i != "function")
       throw new TypeError("error handler must be a function");
-    return c.push(i), n;
-  }, n.async = !1, n;
+    return c.push(i), o;
+  }, o.async = !1, o;
 }, g = (r, e) => {
-  const t = { _namespace: r }, c = (i, o) => (...s) => {
-    const a = n();
-    return o.call(a, ...s);
-  }, n = () => {
+  const t = { _namespace: r }, c = (i, s) => (...n) => {
+    const a = o();
+    return s.call(a, ...n);
+  }, o = () => {
     const i = { _namespace: r };
-    return Object.entries(e).forEach(([o, s]) => {
-      i[o] = c(o, s);
+    return Object.entries(e).forEach(([s, n]) => {
+      i[s] = c(s, n);
     }), i;
   };
-  return Object.entries(e).forEach(([i, o]) => {
-    const s = (...a) => {
-      const h = n();
-      return o.call(h, ...a);
+  return Object.entries(e).forEach(([i, s]) => {
+    const n = (...a) => {
+      const h = o();
+      return s.call(h, ...a);
     };
-    s.direct = s, s.static = (...a) => o(null, ...a), t[i] = s;
+    n.direct = n, n.static = (...a) => s(null, ...a), t[i] = n;
   }), t;
 }, p = (r, e) => {
   let t;
@@ -65,7 +65,7 @@ Caused by: ${e.stack}`)), t;
 }, m = "http://www.w3.org/1999/xhtml", d = {
   CSS_SELECTOR_STR: "selector",
   HTML_ELEMENT_STR: "html"
-}, b = g("DOM", {
+}, S = g("DOM", {
   /**
    * Determines the type of string: HTML element or CSS selector
    *
@@ -102,8 +102,8 @@ Caused by: ${e.stack}`)), t;
         const t = new DOMParser().parseFromString(e, "text/html");
         if (t.querySelectorAll("parsererror").length > 0)
           return console.warn("[detectStringType] HTML parsing error, treating as selector"), d.CSS_SELECTOR_STR;
-        const n = t.body.firstElementChild;
-        if (n && n.tagName)
+        const o = t.body.firstElementChild;
+        if (o && o.tagName)
           return d.HTML_ELEMENT_STR;
       } catch (t) {
         return console.warn("[detectStringType] Error parsing HTML:", t), d.CSS_SELECTOR_STR;
@@ -162,11 +162,11 @@ Caused by: ${e.stack}`)), t;
     if (e.length === 0)
       throw new Error("[parseCssSelector] Empty string passed");
     try {
-      const t = e.match(/^[a-zA-Z][\w-]*/), c = e.match(/#([\w-]+)/), n = [...e.matchAll(/\.([\w-]+)/g)], i = [...e.matchAll(/\[([\w-]+)(?:=(["']?)(.*?)\2)?]/g)], o = t?.[0] ?? null, s = c?.[1] ?? null, a = n.map((f) => f[1]), h = i.map((f) => ({
+      const t = e.match(/^[a-zA-Z][\w-]*/), c = e.match(/#([\w-]+)/), o = [...e.matchAll(/\.([\w-]+)/g)], i = [...e.matchAll(/\[([\w-]+)(?:=(["']?)(.*?)\2)?]/g)], s = t?.[0] ?? null, n = c?.[1] ?? null, a = o.map((f) => f[1]), h = i.map((f) => ({
         name: f[1],
         value: f[3] ?? null
       }));
-      return { tag: o, id: s, classes: a, attributes: h };
+      return { tag: s, id: n, classes: a, attributes: h };
     } catch (t) {
       throw p(
         `[parseCssSelector] Error parsing selector "${r}": ${t.message}`,
@@ -227,21 +227,21 @@ Caused by: ${e.stack}`)), t;
       throw new TypeError(
         `[createElementFromData] Expected object of type Selector, got: ${typeof r}`
       );
-    const { tag: e, id: t, classes: c = [], attributes: n = [] } = r;
+    const { tag: e, id: t, classes: c = [], attributes: o = [] } = r;
     if (!e || typeof e != "string")
       throw new Error(
         `[createElementFromData] Invalid tag: ${e}`
       );
     try {
       const i = document.createElementNS(m, e);
-      return t && (typeof t != "string" ? console.warn(`[createElementFromData] ID must be a string, got: ${typeof t}`) : i.id = t), Array.isArray(c) && c.forEach((o) => {
-        typeof o == "string" ? i.classList.add(o) : console.warn(`[createElementFromData] Skipped invalid class: ${o}`);
-      }), Array.isArray(n) && n.forEach(({ name: o, value: s }) => {
-        if (o && typeof o == "string")
+      return t && (typeof t != "string" ? console.warn(`[createElementFromData] ID must be a string, got: ${typeof t}`) : i.id = t), Array.isArray(c) && c.forEach((s) => {
+        typeof s == "string" ? i.classList.add(s) : console.warn(`[createElementFromData] Skipped invalid class: ${s}`);
+      }), Array.isArray(o) && o.forEach(({ name: s, value: n }) => {
+        if (s && typeof s == "string")
           try {
-            i.setAttribute(o, s || "");
+            i.setAttribute(s, n || "");
           } catch (a) {
-            console.warn(`[createElementFromData] Error setting attribute ${o}:`, a);
+            console.warn(`[createElementFromData] Error setting attribute ${s}:`, a);
           }
       }), i;
     } catch (i) {
@@ -391,33 +391,36 @@ Caused by: ${e.stack}`)), t;
    * )(document.body);
    */
   withElements: (...r) => (e) => {
-    if (!e || typeof e != "function" && !(e instanceof Node))
+    if (!e)
       throw new TypeError(
-        `[withElements] Expected Node or function returning HTMLElement, got: ${typeof e}`
+        "[withElements] Parent is required"
       );
     const t = typeof e == "function" ? e() : e;
-    if (!(t instanceof HTMLElement))
+    if (!(t instanceof Node))
       throw new TypeError(
-        `[withElements] Function must return HTMLElement, got: ${typeof t}`
+        `[withElements] Expected Node or function returning Node, got: ${typeof t} (${t?.constructor?.name})`
       );
-    let c = !1;
-    if (r.forEach((n, i) => {
+    let c = t;
+    t instanceof HTMLTemplateElement ? c = t.content : t instanceof DocumentFragment && (c = t);
+    let o = !1;
+    return r.forEach((i, s) => {
       try {
-        const o = typeof n == "function" ? n() : n;
-        o && o instanceof HTMLElement ? (t.appendChild(o), c = !0) : o != null && console.warn(
-          `[withElements] Skipped invalid child element at index ${i}. Expected Node or function returning HTMLElement, got: ${typeof o}`
-        );
-      } catch (o) {
+        const n = typeof i == "function" ? i() : i;
+        if (n && n instanceof Node)
+          c.appendChild(n), o = !0;
+        else if (n != null) {
+          const a = document.createTextNode(String(n));
+          c.appendChild(a), o = !0;
+        }
+      } catch (n) {
         console.warn(
-          `[withElements] Error processing child element at index ${i}:`,
-          o
+          `[withElements] Error processing child element at index ${s}:`,
+          n
         );
       }
-    }), !c)
-      throw new TypeError(
-        "[withElements] None of the child elements is a valid HTMLElement"
-      );
-    return e;
+    }), o || console.warn(
+      "[withElements] None of the child elements is a valid Node or convertible to text"
+    ), t;
   },
   /**
    * Higher-order function that adds child components to a parent element.
@@ -477,25 +480,25 @@ Caused by: ${e.stack}`)), t;
         `[withComponents] Expected HTMLElement for parent, got: ${typeof e}`
       );
     let c = !1;
-    return r.forEach((n, i) => {
+    return r.forEach((o, i) => {
       try {
-        let o;
-        if (Array.isArray(n)) {
-          const [s, ...a] = n;
-          if (s == null) {
+        let s;
+        if (Array.isArray(o)) {
+          const [n, ...a] = o;
+          if (n == null) {
             console.warn(`[withComponents] Skipped empty element in array at index ${i}`);
             return;
           }
-          typeof s != "function" ? o = s : o = s(...a, ...t);
+          typeof n != "function" ? s = n : s = n(...a, ...t);
         } else
-          o = typeof n == "function" ? n(...t) : n;
-        o && o instanceof HTMLElement ? (e.appendChild(o), c = !0) : o != null && console.warn(
-          `[withComponents] Skipped invalid child element at index ${i}. Expected HTMLElement, got: ${typeof o}`
+          s = typeof o == "function" ? o(...t) : o;
+        s && s instanceof HTMLElement ? (e.appendChild(s), c = !0) : s != null && console.warn(
+          `[withComponents] Skipped invalid child element at index ${i}. Expected HTMLElement, got: ${typeof s}`
         );
-      } catch (o) {
+      } catch (s) {
         console.warn(
           `[withComponents] Error creating child element at index ${i}:`,
-          o
+          s
         );
       }
     }), c || console.warn("[withComponents] None of the child elements is a valid HTMLElement"), e;
@@ -506,15 +509,15 @@ Caused by: ${e.stack}`)), t;
       throw new TypeError("Expected HTMLElement for parent");
     for (const c of r)
       try {
-        let n;
+        let o;
         if (Array.isArray(c)) {
-          const [i, ...o] = c;
-          n = await i(...o, ...t);
+          const [i, ...s] = c;
+          o = await i(...s, ...t);
         } else
-          n = await (typeof c == "function" ? c(...t) : c);
-        n && n instanceof HTMLElement && e.appendChild(n);
-      } catch (n) {
-        console.warn("Error creating child:", n);
+          o = await (typeof c == "function" ? c(...t) : c);
+        o && o instanceof HTMLElement && e.appendChild(o);
+      } catch (o) {
+        console.warn("Error creating child:", o);
       }
     return e;
   },
@@ -559,8 +562,8 @@ Caused by: ${e.stack}`)), t;
         throw new TypeError(
           `[withEventHandlers:handler] Handler for event ${t} must be a function. Got: ${typeof c}`
         );
-      const n = t.replace(/^on/, "").toLowerCase();
-      e.addEventListener(n, c);
+      const o = t.replace(/^on/, "").toLowerCase();
+      e.addEventListener(o, c);
     }), e;
   },
   render: (r) => (e) => {
@@ -850,6 +853,6 @@ Caused by: ${e.stack}`)), t;
   }
 };
 export {
-  S as pipe,
-  b as pipeDom
+  b as pipe,
+  S as pipeDom
 };

@@ -24,18 +24,11 @@ export const Header = (store) => {
 			Pages(
 				store,
 				[
-					{ href: "/", caption: 'Главная'},
-					{ href: "/install", caption: 'Установка' },
-					{ href: "/docs", caption: 'Документация' },
-					{ href: "/demo", caption: 'Попробовать' },
-					{ href: "https://github.com/nickseal80/pipe-js", caption: 'GitHub' },
+					{ href: "main", caption: 'Главная'},
+					{ href: "install", caption: 'Установка' },
+					{ href: "docs", caption: 'Документация' },
+					{ href: "demo", caption: 'Попробовать' },
 				])
 		)
 	)('header');
 }
-
-// <div>
-// 	<a href="https://github.com/nickseal80/pipe-js" className="btn btn-gh">GitHub</a>
-// 	<a href="#demo" className="btn">Попробовать</a>
-// 	<a href="#install" className="btn">Установка</a>
-// </div>

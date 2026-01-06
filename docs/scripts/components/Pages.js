@@ -8,8 +8,20 @@ export const Pages = (store, pages) => {
 				return pipe(
 					pipeDom.createElementFromSelector,
 					pipeDom.withInit(el => {
-						if (store.get('url') === page.href) {
-							el.classList.add('btn-gh');
+						const update = () => {
+							el.classList.remove('btn-gh');
+							if (store.get('url') === page.href) {
+								el.classList.add('btn-gh');
+							}
+						}
+						
+						store.subscribe(update);
+					}),
+					pipeDom.withEventHandlers({
+						onClick: evt => {
+							evt.preventDefault();
+							store.set({ ...store.get(), url: page.href });
+							
 						}
 					}),
 					pipeDom.withAttributes({
