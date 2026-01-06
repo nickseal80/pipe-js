@@ -27,7 +27,7 @@ header {
 .logo {
     width: 232px;
     height: 85px;
-    background: url("/public/logo2.png");
+    background: url("../assets/logo2.png");
     background-size: 232px 85px;
     margin: 0 auto;
 }
