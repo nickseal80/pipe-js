@@ -1,9 +1,10 @@
 import { pipe, pipeDom } from "../../../../dist/pipe-js.es.js";
 import { Badges } from "../Badges.js";
+import { Pages } from "../Pages.js";
 
 const { createElementFromSelector, withElements, withTextContent } = pipeDom;
 
-export const Header = () => {
+export const Header = (store) => {
 	return pipe(
 		createElementFromSelector,
 		withElements(
@@ -18,9 +19,17 @@ export const Header = () => {
 				{ text: '0 зависимостей' },
 				{ text: '~2KB' },
 				{ text: 'Node.js & Browser' },
-				{ text: 'TypeScript готов' },
+				{ text: '@Types' },
 			]),
-			
+			Pages(
+				store,
+				[
+					{ href: "/", caption: 'Главная'},
+					{ href: "/install", caption: 'Установка' },
+					{ href: "/docs", caption: 'Документация' },
+					{ href: "/demo", caption: 'Попробовать' },
+					{ href: "https://github.com/nickseal80/pipe-js", caption: 'GitHub' },
+				])
 		)
 	)('header');
 }
