@@ -366,6 +366,12 @@ export const pipeDom = createLibrary('DOM', {
         
         return element;
     },
+    
+    withInnerHTML: (html) => (element) => {
+        element.innerHTML = html;
+        
+        return element;
+    },
 
     /**
      * Higher-order function that adds child elements to a parent element

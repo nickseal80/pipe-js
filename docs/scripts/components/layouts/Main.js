@@ -1,4 +1,5 @@
 import { pipe, pipeDom } from "../../../ext/pipe-js.es.js";
+import { highlighter } from "../../highlighter.js";
 
 export const Main = (store) => {
 	return pipe(
@@ -11,6 +12,7 @@ export const Main = (store) => {
 				const componentFactory = module[page];
 				const component = componentFactory();
 				el.appendChild(component.render());
+				highlighter();
 			}
 			
 			store.subscribe(update);
